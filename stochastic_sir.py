@@ -1,4 +1,3 @@
-
 import random
 import matplotlib.pyplot as plt
 import heapq 
@@ -32,8 +31,7 @@ class CustomHeap(object):
             return self._data[0][2].time
         return -1
 
-# Inintial Values Put Here
-
+# Initial Values
 S = 997 # Susceptible
 I = 3    # Infected
 R = 0    # Recovered
@@ -42,7 +40,7 @@ N = S + I + R
 avg_rec_time = 5 # Average time in days to recover
 recovery_rate = 0.04 #1 / avg_rec_time # Beta
 
-disease_contact_rate = 0.4  # Beta -> Rate at which S becomes I - Rate pr susceptible-infected contact per unit time
+disease_contact_rate = 0.4  # Beta -> Rate at which S becomes I - Rate per susceptible-infected contact per unit time
 
 def get_S_I_rate():
     return disease_contact_rate * I / N
@@ -54,8 +52,7 @@ def sample_rnd_recovery_time():
 
 def sample_rnd_infection_times():
     dist = Exponential(rate=get_S_I_rate())
-    return dist.sample(sample_shape = torch.tensor([S]))
-
+    return dist.sample(sample_shape=torch.tensor([S]))
 
 # Event Class
 class Event:
@@ -66,7 +63,7 @@ class Event:
 # Event Queue
 events = CustomHeap(key=lambda x: x.time)
 
-# Generate first couple of event - Events for Recovery of first I patients
+# Generate first couple of events - Events for Recovery of first I patients
 current_time = 0
 verbose = True
 
@@ -75,7 +72,6 @@ for i in range(I):
     events.push(Event(2, rec_time))
     if verbose:
         print("Someone got infected!")
-
 
 def infect_someone():
     global S, I, current_time
@@ -107,13 +103,11 @@ while I > 0:
         next_event_time = events.get_next_time()
         next_infected_time = next_infected_time[next_infected_time < next_event_time]
 
+        for i in range(next_infected_time.shape[0]):
+            infect_someone()
+            current_time = next_infected_time[i].item()
+        recover_someone()
         
-        if next_infected_time.shape[0] == 0:
-            recover_someone()
-        else:
-            for i in range(next_infected_time.shape[0]):
-                infect_someone()
-                current_time = next_infected_time[i].item()
     else:
         recover_someone()
 
@@ -122,9 +116,7 @@ while I > 0:
 print("Simulation Ended! Amount Not Infected: " + str(S))
 print("Amount Recovered: " + str(R))
 
-
 # Plot Data
-# progression_seq = progression_seq[:-20] # Remove outliers
 times = [t for t, n1, n2, n3 in progression_seq]
 amounts1 = [n1 for t, n1, n2, n3 in progression_seq]
 amounts2 = [n2 for t, n1, n2, n3 in progression_seq]
@@ -133,13 +125,14 @@ amounts3 = [n3 for t, n1, n2, n3 in progression_seq]
 # Plot the data
 plt.figure(figsize=(10, 6))
 
-plt.plot(times, amounts1, label='Series 1')
-plt.plot(times, amounts2, label='Series 2')
-plt.plot(times, amounts3, label='Series 3')
+plt.plot(times, amounts1, label='Susceptible (S)')
+plt.plot(times, amounts2, label='Infected (I)')
+plt.plot(times, amounts3, label='Recovered (R)')
 
-plt.xlabel('Time')
-plt.ylabel('Amount')
-plt.title('Amount Change Over Time')
+plt.xlabel('Time (days)')
+plt.ylabel('Number of Individuals')
+plt.title(f'Disease Progression Over Time\nRecovery Rate: {recovery_rate}, Contact Rate: {disease_contact_rate}')
 plt.legend()
 plt.grid(True)
+
 plt.show()
