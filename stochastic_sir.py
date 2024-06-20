@@ -107,7 +107,8 @@ while I > 0:
         next_event_time = events.get_next_time()
         next_infected_time = next_infected_time[next_infected_time < next_event_time]
 
-        if len(next_event_time) == 0:
+        
+        if next_infected_time.shape[0] == 0:
             recover_someone()
         else:
             for i in range(next_infected_time.shape[0]):
