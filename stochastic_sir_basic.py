@@ -46,11 +46,6 @@ recovery_rate = 1/avg_rec_time # Theta
 
 disease_contact_rate = 0.2  # Beta: Rate at which S becomes I
 
-avg_time_to_death = 1600
-death_rate = 1 / avg_time_to_death
-
-avg_immune_time = 30*3
-immune_rate = 1 / avg_immune_time
 
 def seasonal_multiplier(t):
     return (math.cos(t*2*math.pi/365)+5)/4
@@ -60,12 +55,9 @@ def get_S_I_rate(time):
 
 # Distributions
 class DistributionSamplers:
-    def __init__(self, recovery_rate, death_rate, immune_rate):
+    def __init__(self, recovery_rate):
         self.recovery_dist  = Exponential(recovery_rate)
         # self.recovery_dist  = Normal(loc=14, scale=2)
-
-        self.death_dist     = Exponential(death_rate)
-        self.immune_dist    = Exponential(immune_rate)
         
 
     def sample_rnd_recovery_time(self):
@@ -74,12 +66,6 @@ class DistributionSamplers:
     def sample_rnd_infection_times(self, current_time):
         infection_dist = Exponential(rate=get_S_I_rate(current_time))
         return infection_dist.sample(sample_shape=torch.tensor([S]))
-
-    def sample_death_time(self):
-        return self.death_dist.sample().item()
-
-    def sample_immune_end_time(self):
-        return self.immune_dist.sample().item()
 
 # Event Class
 class Event:
@@ -100,10 +86,8 @@ def infect_someone(sampler):
     I += 1
 
     time_to_recover = current_time + sampler.sample_rnd_recovery_time()
-    time_to_death = current_time + sampler.sample_death_time()
     
-    event_type = 1 if time_to_recover < time_to_death else 2
-    events.push(Event(event_type, min(time_to_death, time_to_recover)))
+    events.push(Event(1, time_to_recover))
     
     if verbose:
         print("Someone got infected at time " + str(current_time) + "!")
@@ -116,13 +100,6 @@ def handle_event(sampler):
     if event.event_type == 1:  # Someone recovers and becomes immune - add stop being immune time
         R += 1
         I -= 1
-        events.push(Event(3, current_time + sampler.sample_immune_end_time()))
-    elif event.event_type == 2:  # Someone dies
-        D += 1
-        I -= 1
-    elif event.event_type == 3:  # Stops being immune
-        R -= 1
-        S += 1
 
     
     current_time = event.time
@@ -131,14 +108,12 @@ def handle_event(sampler):
 
 progression_seq = []
 
-sampler = DistributionSamplers(recovery_rate, death_rate, immune_rate)
+sampler = DistributionSamplers(recovery_rate)
 
 for i in range(I):
     time_to_recover = current_time + sampler.sample_rnd_recovery_time()
-    time_to_death = current_time + sampler.sample_death_time()
     
-    event_type = 1 if time_to_recover < time_to_death else 2
-    events.push(Event(event_type, min(time_to_death, time_to_recover)))
+    events.push(Event(1, time_to_recover))
 
     if verbose:
         print("Someone got infected!")
@@ -176,7 +151,7 @@ print("Amount Recovered: " + str(R))
 print("Amount Died: " + str(D))
 
 # Plot the data
-times = [t for t, n1, n2, n3, n4 in progression_seq]
+times    = [t for t, n1, n2, n3, n4  in progression_seq]
 amounts1 = [n1 for t, n1, n2, n3, n4 in progression_seq]
 amounts2 = [n2 for t, n1, n2, n3, n4 in progression_seq]
 amounts3 = [n3 for t, n1, n2, n3, n4 in progression_seq]
@@ -186,12 +161,11 @@ plt.figure(figsize=(10, 6))
 
 plt.plot(times, amounts1, label='Susceptible (S)')
 plt.plot(times, amounts2, label='Infected (I)')
-plt.plot(times, amounts3, label='Immune (Im)')
-plt.plot(times, amounts4, label='Deaths (D)')
+plt.plot(times, amounts3, label='Recovered (R)')
 
 plt.xlabel('Time (days)')
 plt.ylabel('Number of Individuals')
-plt.title(f'Disease Progression Over Time\nRecovery Rate: {recovery_rate}, Contact Rate: {disease_contact_rate}, Death Rate: {death_rate}, Immune Rate: {immune_rate}')
+plt.title(f'Disease Progression Over Time\nRecovery Rate: {recovery_rate}, Contact Rate: {disease_contact_rate}')
 plt.legend()
 plt.grid(True)
 
