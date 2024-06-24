@@ -10,9 +10,9 @@ class BaseModel(torch.nn.Module):
         super(BaseModel, self).__init__()
 
 
-class SIRModel(BaseModel):
+class ODESIRModel(BaseModel):
     def __init__(self, beta, gamma):
-        super(SIRModel, self).__init__()
+        super(ODESIRModel, self).__init__()
         """
         Params:
             beta: float - transmission rate,
@@ -31,9 +31,9 @@ class SIRModel(BaseModel):
         return torch.tensor([dSdt, dIdt, dRdt])
 
 
-class SIRDModel(BaseModel):
+class ODESIRDModel(BaseModel):
     def __init__(self, beta, gamma, mu):
-        super(SIRDModel, self).__init__()
+        super(ODESIRDModel, self).__init__()
         """
         Params:
             beta: float - transmission rate,
@@ -68,16 +68,16 @@ if __name__ == '__main__':
     I0 = .003
     R0 = .0
     D0 = .0
-    # y0 = torch.tensor([S0, I0, R0], dtype=torch.float32) # ! SIR
-    y0 = torch.tensor([S0, I0, R0, D0], dtype=torch.float32) # ! SIRD
+    y0 = torch.tensor([S0, I0, R0], dtype=torch.float32) # ! SIR
+    # y0 = torch.tensor([S0, I0, R0, D0], dtype=torch.float32) # ! SIRD
 
     # Parameters
     beta  = .4
     gamma = .035
     mu = .005
 
-    # model = SIRModel(beta=beta, gamma=gamma)
-    model = SIRDModel(beta=beta, gamma=gamma, mu=mu)
+    model = ODESIRModel(beta=beta, gamma=gamma)
+    # model = SIRDModel(beta=beta, gamma=gamma, mu=mu)
 
     # Time points
     T = 100
@@ -88,8 +88,8 @@ if __name__ == '__main__':
     population = 1_000
 
     fig,ax = plt.subplots(1,1,figsize=(10,6))
-    # ax.plot(t, res*population, label=['[S]usceptible', '[I]nfected', '[R]ecovered'], linewidth=3)
-    ax.plot(t, res*population, label=['[S]usceptible', '[I]nfected', '[R]ecovered', '[D]ead'], linewidth=3)
+    ax.plot(t, res*population, label=['[S]usceptible', '[I]nfectious', '[R]ecovered'], linewidth=3)
+    # ax.plot(t, res*population, label=['[S]usceptible', '[I]nfectious', '[R]ecovered', '[D]ead'], linewidth=3)
 
     ax.set_xlabel("$t$")
     ax.set_ylabel("Frequency")
